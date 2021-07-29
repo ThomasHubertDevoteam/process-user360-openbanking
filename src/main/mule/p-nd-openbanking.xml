@@ -1,0 +1,1079 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <http:listener-config name="p-nd-openbanking-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8082" />
+    </http:listener-config>
+    <apikit:config name="p-nd-openbanking-config" api="p-nd-openbanking.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="cd403ebf-a8c3-4a22-8c89-0ac25025f6ed">
+        <http:request-connection host="localhost" port="8081" />
+    </http:request-config>
+    <http:request-config name="HTTP_Request_configuration_square" doc:name="HTTP Request configuration" doc:id="d61fdce3-3cb7-4f12-ac07-7ee262d8c797">
+        <http:request-connection host="localhost" port="8083" />
+    </http:request-config>
+    <http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="ab92abb2-be78-4a82-a82f-5ca45a320468">
+        <http:request-connection host="localhost" port="8082" />
+    </http:request-config>
+    <flow name="p-nd-openbanking-main">
+        <http:listener config-ref="p-nd-openbanking-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="p-nd-openbanking-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="p-nd-openbanking-console">
+        <http:listener config-ref="p-nd-openbanking-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="p-nd-openbanking-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\process\update_price:application\json:p-nd-openbanking-config">
+        <set-variable value="#[payload.IDorder]" doc:name="IDorder" doc:id="cae1bfcd-8d38-4676-bfef-b0d3fd5a2a08" variableName="IDorder" />
+        <set-variable value="#[payload.IDstore]" doc:name="IDstore" doc:id="fbeaf6bf-90d9-4c00-9fac-4035a1b68b6b" variableName="IDstore" />
+        <http:request method="GET" doc:name="Request all products" doc:id="b2d700d0-0a03-4d7c-a6b4-9678e7f6056b" path="/api/orderedProducts/all/{order_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	order_id : vars.IDorder
+}]]]></http:uri-params>
+        </http:request>
+        <foreach doc:name="For Each" doc:id="a5174fa7-c066-4167-b2ee-25c5efafe2a4">
+            <set-variable value="#[payload.IDproduct]" doc:name="IDproduct" doc:id="d32785d9-a0fe-4ed0-bead-16f65d133b94" variableName="IDproduct" />
+            <set-variable value="#[payload.NumProductOrdered]" doc:name="NumProductOrdered " doc:id="b5f87974-f9cc-49d9-b1c6-5d589982bdbf" variableName="NumProductOrdered " />
+            <set-variable value="#[payload.OrderedPrice]" doc:name="Price" doc:id="c7b58ab9-d295-4b2d-9e63-6ed04a8b118a" variableName="Price" />
+            <flow-ref doc:name="Flow Reference" doc:id="84095354-4794-4256-ae22-fbc3b29cf4eb" name="updatePricePromo" />
+        </foreach>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Message: "Prices updated"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="updatePricePromo" doc:id="7f80e528-15a6-40fe-9629-9266a7b33a6e">
+        <http:request method="GET" doc:name="Request Promo associated" doc:id="5151f8c0-c97a-4e54-83b1-2bde3ff3a1d5" path="/api/promos/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"product_id" : vars.IDproduct
+}]]]></http:uri-params>
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+	store_id : vars.IDstore
+}]]]></http:query-params>
+        </http:request>
+        <choice doc:name="Choice" doc:id="ca689d52-a57d-414a-8f65-bff6eb9f3140">
+            <when expression="#[isEmpty(payload)]">
+                <logger level="INFO" doc:name="Logger" doc:id="9fc4bdfc-99b2-407a-85b1-27bf2138727c" message="No Promo" />
+            </when>
+            <otherwise>
+                <set-variable value="#[payload[0].PromoTresholdNumber]" doc:name="Treshold" doc:id="35459293-7e73-447c-bf8a-3ed46b556616" variableName="Treshold" />
+                <set-variable value="#[payload[0].PromoReducPercent]" doc:name="ReducPercent" doc:id="d9a7c1c2-1f1c-47c0-aeae-a44c591936d2" variableName="ReducPercent" />
+                <logger level="INFO" doc:name="Logger" doc:id="e43e9f5e-5c19-4579-9ca6-6d24cd7155cd" message="#[payload]" />
+                <flow-ref doc:name="Flow Reference" doc:id="571bfe24-694a-4b0e-90b9-6a0103579f47" name="reducePrice" />
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="reducePrice" doc:id="9355b694-08b3-4ebc-8aaf-259dba8e017b">
+        <choice doc:name="Choice" doc:id="fb0e1da3-b8ed-4d47-bfe4-719915c72d05">
+            <when expression="#[vars.NumProductOrdered &gt;= vars.Treshold]">
+                <http:request method="GET" doc:name="Request" doc:id="8d0a63d7-9812-4cb6-b4ac-ca6046847706" path="/api/products/{product_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	product_id : vars.IDproduct
+}]]]></http:uri-params>
+                </http:request>
+                <set-variable value="#[payload[0].ProductPrice]" doc:name="PriceProduct" doc:id="d4a7e38f-94fa-4ea4-b719-0035c3f24216" variableName="PriceProduct" />
+                <set-variable value="#[(vars.PriceProduct as Number)*(vars.ReducPercent as Number)/100]" doc:name="Reduction" doc:id="fb7ac1de-bee5-4f63-a372-345ffc8379bc" variableName="Reduction" />
+                <set-variable value="#[(vars.Price as Number) - (vars.Reduction as Number)]" doc:name="NewPriceWithPromo" doc:id="e5d5f54d-c424-4697-9e3f-30242d636e0b" variableName="NewPriceWithPromo" />
+                <http:request method="PUT" doc:name="Request" doc:id="4ddc832f-d531-456c-b5d0-871698a33b73" path="/api/orderedProducts/promo" config-ref="HTTP_Request_configuration">
+                    <http:body><![CDATA[#[{
+	"IDorder": vars.IDorder,
+	"IDproduct": vars.IDproduct,
+	"NewPromoPrice": vars.NewPriceWithPromo
+	
+}]]]></http:body>
+                </http:request>
+            </when>
+            <otherwise>
+                <logger level="INFO" doc:name="Logger" doc:id="6f99636d-c8bb-46e3-ab2f-190a8b6efcb3" message="Not enough product" />
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="get:\process\clients_info\(client_id)\bank:p-nd-openbanking-config">
+        <http:request method="GET" doc:name="Request" doc:id="f7a12016-a629-4a64-b3f0-489f39001dc6" path="/api/clients/{client_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'client_id' : attributes.uriParams.client_id
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].IDbank as Number]" doc:name="Set Variable" doc:id="9c638389-ea3c-4c10-a900-9fec9a697f41" variableName="id_bank" />
+        <http:request method="GET" doc:name="Request" doc:id="cbb62340-ad72-44cb-a2e0-53fc1bf35656" path="/api/banks/{bank_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'bank_id' : vars.id_bank
+}]]]></http:uri-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\barcodes_product\(full_code):p-nd-openbanking-config">
+        <http:request method="GET" doc:name="Request" doc:id="de19b8b9-1929-439d-a7df-9ee56853b0e6" path="/api/barcodes/{barcode_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'barcode_id' : attributes.uriParams.full_code
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].IDproductAssociated]" doc:name="Set Variable" doc:id="bf2fdfca-76d1-4554-b1a4-ccf6e1a9dfe1" variableName="IDproduct" />
+        <http:request method="GET" doc:name="Request" doc:id="ddcdb3d3-e524-4cf0-a8fe-3026aba60499" path="/api/products/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'product_id' : vars.IDproduct
+}]]]></http:uri-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\clients_info\(client_id):p-nd-openbanking-config">
+        <http:request method="GET" doc:name="Request" doc:id="d5ca3560-be13-4f5f-b1bf-53fe7f3a2fce" path="/api/clients/{client_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'client_id' : attributes.uriParams.client_id
+}]]]></http:uri-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="39eb3fb5-34be-4ae0-90df-ba931d2c1a41">
+                <set-payload value="Error while fetching Bank information" doc:name="Set Payload" doc:id="226942e4-c8bc-4995-812d-ad92a4826f5b" />
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\process\clients_info\(client_id)\fidelity:p-nd-openbanking-config">
+        <set-variable value="#[attributes.queryParams.StoreBrand as String default &quot;SuperU&quot;]" doc:name="Set Variable" doc:id="22ce53d0-f46b-49d1-91da-a7cb4c30d290" variableName="StoreBrand" />
+        <http:request method="GET" doc:name="Request" doc:id="68d7cbe8-ff3c-4ff8-bbad-49b620c14160" path="/api/fidelities/{client_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'client_id' : attributes.uriParams.client_id
+}]]]></http:uri-params>
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+	StoreBrand : vars.StoreBrand
+}]]]></http:query-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload filter $.StoreBrand == vars.StoreBrand]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\products_info\(product_id)\info:p-nd-openbanking-config">
+        <http:request method="GET" doc:name="Copy_of_Copy_of_Request" doc:id="54ff3b12-d5f8-477d-98b8-3e514dca69ef" path="/api/products/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'product_id' : attributes.uriParams.product_id
+}]]]></http:uri-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Info: payload[0].ProductDescription
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\products_info\(product_id)\price:p-nd-openbanking-config">
+        <http:request method="GET" doc:name="Copy_of_Request" doc:id="0402207d-1c3e-4573-985c-8cae0b59f0e6" path="/api/products/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'product_id' : attributes.uriParams.product_id
+}]]]></http:uri-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Price: payload[0].ProductPrice
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\products_info\(product_id):p-nd-openbanking-config">
+        <http:request method="GET" doc:name="Request" doc:id="ec9ff81b-14f2-44ca-90f9-807fee10c840" path="/api/products/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'product_id' : attributes.uriParams.product_id
+}]]]></http:uri-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\products_info\(product_id)\promo:p-nd-openbanking-config">
+        <set-variable value="#[attributes.queryParams.IDstore]" doc:name="Set Variable" doc:id="e1348ee0-fa1e-4fce-b436-06f52f870c01" variableName="store_id" />
+        <http:request method="GET" doc:name="Request" doc:id="7d7fb97f-5120-47a6-8e29-49f456dde237" path="/api/promos/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'product_id' : attributes.uriParams.product_id
+}]]]></http:uri-params>
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+	store_id : vars.store_id
+}]]]></http:query-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\promos\(product_id):p-nd-openbanking-config">
+        <http:request method="GET" doc:name="Request" doc:id="a53dd03b-a145-4959-b06d-d026a8d899f7" path="/api/promos/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"product_id" : attributes.uriParams.product_id
+}]]]></http:uri-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\store_qr_code\(store_qrcode):p-nd-openbanking-config">
+        <set-variable value="#[attributes.queryParams.IDuser]" doc:name="Set Variable" doc:id="0d7dbfe2-8aae-45a1-8abd-12cd7dbfec8a" variableName="IDuser" />
+        <http:request method="GET" doc:name="Request" doc:id="7b8df356-c2ed-417b-85b7-fa2956b7cadb" path="/api/stores_barcode/{store_qrcode}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'store_qrcode' : attributes.uriParams.store_qrcode
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].IDstore]" doc:name="IDstore" doc:id="47abeca1-b6ca-492e-b5d4-ed628953179e" variableName="IDstore" />
+        <http:request method="GET" doc:name="Request" doc:id="402f4167-bf01-46f9-b8e8-1026abfea87e" path="api/stores/{store_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'store_id' : vars.IDstore
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].StoreName]" doc:name="StoreName" doc:id="a0b0f497-3d31-499b-ab06-f2fadb8f720c" variableName="StoreName" />
+        <ee:transform doc:name="Transform Message" doc:id="0fabfc45-e171-4fdd-b0ba-496189fba156">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+
+output application/json
+
+var strCharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ++
+
+'abcdefghijklmnop-qrstuvwxyz' ++
+
+'0123456789' ++
+
+'abcdefghijklmn-opqrstuvwxyz'
+
+var strCharSetLength = sizeOf(strCharSet) - 1
+
+var intLength = 16
+
+---
+
+1 to intLength map strCharSet[randomInt(strCharSetLength)] joinBy '']]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <set-variable value="#[payload]" doc:name="IdemPotencyKey" doc:id="02152045-3547-47cf-a65d-b7b4dbcbfc43" variableName="IdemPotencyKey" />
+        <ee:transform doc:name="Transform Message" doc:id="a085111e-d57d-4fba-b0b4-65d0a8261d32">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "idempotency_key": vars.IdemPotencyKey,
+    "order": {
+      "location_id": "LADY3XYQE7B1Z",
+      "customer_id": vars.IDuser,
+      "pricing_options": {
+        "auto_apply_discounts": false,
+        "auto_apply_taxes": false
+      },
+      "source": {
+        "name": vars.StoreName
+      },
+      "state": "OPEN"
+    }
+  }]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <http:request method="POST" doc:name="Request" doc:id="87049808-19d7-4ab1-be7d-fb4f3b576785" config-ref="HTTP_Request_configuration_square" path="/api/square/orders" />
+        <set-variable value="#[payload]" doc:name="new_order" doc:id="dba9ab2e-e6ff-44a0-9561-7b712bb6638b" variableName="new_order" />
+        <ee:transform doc:name="Transform Message" doc:id="3d52a0c7-0d76-45f4-8d90-877d27cdee80">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "OrderTotalPrice": 0,
+  "IDorder" : vars.new_order.order.id,
+  "OrderTotalPriceWithPromo" : 0,
+  "OrderDate": "2020-04-01",
+  "OrderValidated": 0,
+  "IDstore" : vars.IDstore,
+  "IDuser" : vars.IDuser
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <http:request method="POST" doc:name="Request" doc:id="043bd4da-649a-4ecc-85db-d59b2d53bb2c" path="/api/new_orders/{order_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'order_id' : 1
+}]]]></http:uri-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	'Store' : vars.StoreName,
+	'IDstore' : vars.IDstore, 
+	'IDorder' : vars.new_order.order.id
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\test:p-nd-openbanking-config">
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "API OK"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\process\products_order\to_order:application\json:p-nd-openbanking-config">
+        <set-variable value="#[attributes.queryParams.IDproduct]" doc:name="IDproduct" doc:id="248c357f-2a51-4484-a326-a1aa3a363e87" variableName="IDproduct" />
+        <set-variable value="#[attributes.queryParams.IDorder]" doc:name="IDorder" doc:id="72ecdc71-7996-4667-9ec1-df1efefe73e6" variableName="IDorder" />
+        <http:request method="GET" doc:name="Request Product" doc:id="747c049f-d713-4ba2-aca6-2636684c34b6" path="/api/products/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	'product_id' : vars.IDproduct
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].ProductPrice]" doc:name="ProductPrice" doc:id="e5e06242-b7b1-49f6-a41d-1d14cb1c56d5" variableName="ProductPrice" />
+        <http:request method="POST" doc:name="Post ordered Product" doc:id="6bc228ee-509d-4c21-901a-1079818fc595" path="/api/orderedProducts/new/{order_id}" config-ref="HTTP_Request_configuration">
+            <http:body><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	'IDproduct' : vars.IDproduct,
+	'IDorder' : vars.IDorder,
+	'NumProductOrdered' : 1,
+	'OrderedPrice' : vars.ProductPrice, 
+	'PriceWithPromo' : vars.ProductPrice
+	
+}]]]></http:body>
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"order_id" : vars.IDorder
+}]]]></http:uri-params>
+        </http:request>
+        <http:request method="GET" doc:name="request of order" doc:id="5bc7b61d-d9da-4847-a8a5-8f75f2de150b" config-ref="HTTP_Request_configuration" path="/api/orders/{order_id}">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	order_id : vars.IDorder
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].OrderIDstore]" doc:name="IDstore" doc:id="7ffefdc7-70e2-4fb3-80f5-ac9d4677bbe0" variableName="IDstore" />
+        <ee:transform doc:name="Transform Message" doc:id="c42cb99d-7b7a-405d-bc28-38971edf9412">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "IDorder" : vars.IDorder ,
+    "IDstore" : vars.IDstore
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <http:request method="PUT" doc:name="apply promo" doc:id="ec549b53-63da-4390-9936-9fd16c37b70b" config-ref="HTTP_Request_configuration1" path="/api/process/update_price">
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+	IDorder : vars.IDorder
+}]]]></http:query-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\process\products_order\update:application\json:p-nd-openbanking-config">
+        <set-variable value="#[payload.IDproduct]" doc:name="IDproduct" doc:id="70ceec95-2f48-4df5-a79e-55b4f6ba4a44" variableName="IDproduct" />
+        <set-variable value="#[payload.Number]" doc:name="AdjustNumber" doc:id="fa142197-7465-4533-b10b-882c455a71b5" variableName="AdjustNumber" />
+        <set-variable value="#[payload.IDorder]" doc:name="IDorder" doc:id="d2189e20-b499-4e85-a3a0-b0e0de45ab06" variableName="IDorder" />
+        <http:request method="GET" doc:name="GET /product" doc:id="3c66eb58-8405-44d8-b63a-19271b75fb83" path="/api/products/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"product_id" : vars.IDproduct
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].ProductPrice]" doc:name="ProductPrice" doc:id="81b2c2fb-b834-4d96-9e17-b956fd0ba4f8" variableName="ProductPrice" />
+        <http:request method="GET" doc:name="GET /orderedProduct" doc:id="1c153cd8-f4ed-4739-8994-bbfb90896a00" path="/api/orderedProducts/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"product_id" : vars.IDproduct
+}]]]></http:uri-params>
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+	IDorder : vars.IDorder,
+	product_id : vars.IDproduct
+}]]]></http:query-params>
+        </http:request>
+        <set-variable value="#[payload.NumProductOrdered]" doc:name="Set Variable" doc:id="c154c5d7-b2bb-4cd3-b4df-942ae922aab5" variableName="NumPresent" />
+        <choice doc:name="Choice" doc:id="231c1ea7-6672-458e-acb4-f3d0deb96d52">
+            <when expression="#[vars.AdjustNumber &gt; 0]">
+                <set-variable value="#[(payload.NumProductOrdered[0] as Number) + (vars.AdjustNumber as Number)]" doc:name="NewQuantity" doc:id="a4332621-092b-44d1-a75e-d52dc9716114" variableName="newQuantity" />
+                <set-payload value="#[{ &#xA; 'IDproduct' : vars.IDproduct, &#xA; 'NumProductOrdered' : vars.NewQuantity &#xA;}]" doc:name="Set Payload" doc:id="cdadbcb9-89ef-4258-87ca-edb7f9e6f08a" />
+                <http:request method="PUT" doc:name="PUT /ordered Product" doc:id="a0a4e2fb-330d-4a98-8f4a-22aa782b59b4" path="/api/orderedProducts/update/{order_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"order_id" : vars.IDorder
+}]]]></http:uri-params>
+                    <http:query-params><![CDATA[#[output application/java
+---
+{
+	"nombre" : vars.NewQuantity
+}]]]></http:query-params>
+                </http:request>
+                <set-variable value="#[(vars.AdjustNumber as Number) * (vars.ProductPrice as Number)]" doc:name="AdjustedPrice" doc:id="be25221d-fc03-475d-acb1-d90dbe085753" variableName="AdjustedPrice" />
+                <http:request method="GET" doc:name="GET /orders" doc:id="50f6463d-c492-4a09-8b9a-a26689eef0a6" path="/api/orders/{order_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"order_id" : vars.IDorder
+}]]]></http:uri-params>
+                </http:request>
+                <set-payload value="#[{ &#xA; &quot;IDorder&quot; : vars.IDorder, &#xA; &quot;OrderTotalPrice&quot; : vars.AdjustedPrice + payload[0].OrderTotalPrice, &#xA; &quot;OrderValidated&quot; : 0 &#xA;  &#xA;}]" doc:name="Set Payload" doc:id="ffd74611-b700-4e24-aafb-5e8997578566" />
+                <http:request method="PUT" doc:name="/PUT order" doc:id="49679902-9bb0-47bb-8439-5b6c6b4d2017" path="/api/orders/{order_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"order_id" : vars.IDorder
+}]]]></http:uri-params>
+                </http:request>
+            </when>
+            <when expression="#[(vars.AdjustNumber as Number) &gt;= (payload.NumProductOrdered)]">
+                <http:request method="DELETE" doc:name="DELETE /orderProduct" doc:id="20cc3eec-17e7-4b18-bac0-1f388656412a" path="/api/orderedProducts/update/{product_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	order_id : vars.IDproduct
+}]]]></http:uri-params>
+                    <http:query-params><![CDATA[#[output application/java
+---
+{
+	"product_id" : vars.IDproduct,
+	"nombre" : 0
+}]]]></http:query-params>
+                </http:request>
+                <set-variable value="#[(vars.NumPresent as Number) * (vars.ProductPrice as Number)]" doc:name="AdjustedPrice" doc:id="7183c907-aeac-4648-ae2e-574bb7126e12" variableName="AdjustedPrice" />
+                <http:request method="GET" doc:name="GET /orders" doc:id="707aa694-9bf4-46f7-98ab-215a318f35f5" path="/api/orders/{order_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"order_id" : vars.IDorder
+}]]]></http:uri-params>
+                </http:request>
+                <set-payload value="#[{ &#xA; &quot;IDorder&quot;: vars.IDorder, &#xA; &quot;OrderTotalPrice&quot; :  payload[0].OrderTotalPrice - vars.AdjustedPrice, &#xA; &quot;OrderValidated&quot; : 0 &#xA;  &#xA;}]" doc:name="Set Payload" doc:id="7c04ee49-0657-42b8-9d5d-b962835786fe" />
+                <http:request method="PUT" doc:name="/PUT order" doc:id="2eee9869-05d3-4609-8d3c-896e586767fa" path="/api/orders/{order_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"order_id" : vars.IDorder
+}]]]></http:uri-params>
+                </http:request>
+            </when>
+            <otherwise>
+                <set-variable value="#[(payload.NumProductOrdered[0] as Number) - (vars.AdjustNumber as Number)]" doc:name="Copy_of_NewQuantity" doc:id="8c7f08df-ea63-4eb8-809e-b29bae82dc0c" variableName="newQuantity" />
+                <set-payload value="#[{ &#xA; 'IDproduct' : vars.IDproduct, &#xA; 'NumProductOrdered' : vars.NewQuantity &#xA;}]" doc:name="Copy_of_Set Payload" doc:id="c232b90f-7ea1-4f45-8bc9-e83744ef9342" />
+                <http:request method="PUT" doc:name="Copy_of_PUT /ordered Product" doc:id="dcfc1c74-d973-43cf-bacf-f576ec36457a" path="/api/orderedProducts/update/{order_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"order_id" : vars.IDorder
+}]]]></http:uri-params>
+                    <http:query-params><![CDATA[#[output application/java
+---
+{
+	"nombre" : vars.NewQuantity
+}]]]></http:query-params>
+                </http:request>
+                <set-variable value="#[(vars.AdjustNumber as Number) * (vars.ProductPrice as Number)]" doc:name="Copy_of_AdjustedPrice" doc:id="ee32830f-af65-4cda-a784-a18aa793f62c" variableName="AdjustedPrice" />
+                <http:request method="GET" doc:name="Copy_of_GET /orders" doc:id="a902280d-ded4-40a1-8b5d-64bc45fb8b3e" path="/api/orders/{order_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"order_id" : vars.IDorder
+}]]]></http:uri-params>
+                </http:request>
+                <set-payload value="#[{ &#xA; &quot;IDorder&quot; : vars.IDorder, &#xA; &quot;OrderTotalPrice&quot; :  payload[0].OrderTotalPrice - vars.AdjustedPrice, &#xA; &quot;OrderValidated&quot; : 0 &#xA;  &#xA;}]" doc:name="Copy_of_Set Payload" doc:id="1bd52423-deed-4701-bf62-f15bb5f197e6" />
+                <http:request method="PUT" doc:name="Copy_of_/PUT order" doc:id="06ac5bbb-b87d-4930-ad53-5e5eed7ade3d" path="/api/orders/{order_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"order_id" : vars.IDorder
+}]]]></http:uri-params>
+                </http:request>
+            </otherwise>
+        </choice>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Product updated"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\process\products_order\minus:application\json:p-nd-openbanking-config">
+        <set-variable value="#[payload.Number as Number]" doc:name="CutNum" doc:id="b085a9aa-a2ad-49dd-b8aa-441dc18bea92" variableName="CutNum" />
+        <set-variable value="#[payload.IDorder]" doc:name="IDorder" doc:id="ab41f61c-ddf9-427d-a09e-88b5a561754e" variableName="IDorder" />
+        <set-variable value="#[payload.IDproduct]" doc:name="IDproduct" doc:id="2a3474b1-b4d9-4c4c-a104-ae60bd503717" variableName="IDproduct" />
+        <http:request method="GET" doc:name="get /product" doc:id="a48b0552-635f-419b-81ed-d04338a9496b" path="/api/products/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	product_id : vars.IDproduct
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[(payload[0].ProductPrice as Number) * (vars.CutNum as Number)]" doc:name="AddPrice" doc:id="9f02d156-8cb3-4e9c-bee4-dae3510c197f" variableName="AddPrice" />
+        <http:request method="PUT" doc:name="Request ordered minus" doc:id="1260fd2b-49b5-487c-8fab-0e01c31074d0" path="/api/orderedProducts/minus" config-ref="HTTP_Request_configuration">
+            <http:body><![CDATA[#[{
+    "IDorder" : vars.IDorder,
+    "IDproduct" : vars.IDproduct,
+    "NumCut" : vars.CutNum,
+    "NewPrice" : vars.AddPrice
+}]]]></http:body>
+        </http:request>
+        <http:request method="GET" doc:name="Request" doc:id="192c4b54-3e74-46f1-a890-29cfd8d5df0a" config-ref="HTTP_Request_configuration" path="/api/orders/{order_id}">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	order_id : vars.IDorder
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].OrderIDstore]" doc:name="IDstore" doc:id="cfa1eb32-041f-480d-af58-e9a6e7e86ff4" variableName="IDstore" />
+        <http:request method="PUT" doc:name="Request" doc:id="b9600595-73db-4276-bf06-aa0432efa954" config-ref="HTTP_Request_configuration1" path="/api/process/update_price">
+            <http:body><![CDATA[#[{
+    "IDorder" : vars.IDorder ,
+    "IDstore" : vars.IDstore
+}]]]></http:body>
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+	IDorder : vars.IDorder
+}]]]></http:query-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Product Removed"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\process\products_order\plus:application\json:p-nd-openbanking-config">
+        <set-variable value="#[payload.IDorder]" doc:name="IDorder" doc:id="96705991-38a5-401b-9fc0-9b8a10475219" variableName="IDorder" />
+        <set-variable value="#[payload.NumAdded as Number]" doc:name="AddNum" doc:id="4326a01f-3001-4666-b52d-df39b1c7e14d" variableName="AddNum" />
+        <set-variable value="#[payload.IDproduct]" doc:name="IDproduct" doc:id="80a1e14c-71b8-4c49-8f2b-844be787b7ba" variableName="IDproduct" />
+        <http:request method="GET" doc:name="get /product" doc:id="acf6f533-afea-4f61-9921-e9614f4a476c" path="/api/products/{product_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	product_id : vars.IDproduct
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[(payload[0].ProductPrice as Number) * (vars.AddNum as Number)]" doc:name="AddPrice" doc:id="1dea1335-0cb6-4aee-a4e1-4653568c9b90" variableName="AddPrice" />
+        <http:request method="PUT" doc:name="Request ordered plus" doc:id="280e03a1-ff35-4610-8708-3be5c8ff399b" path="/api/orderedProducts/plus" config-ref="HTTP_Request_configuration">
+            <http:body><![CDATA[#[{
+    "IDorder" : vars.IDorder,
+    "IDproduct" : vars.IDproduct,
+    "NumAdded" : vars.AddNum,
+    "NewPrice" : vars.AddPrice
+}]]]></http:body>
+        </http:request>
+        <http:request method="GET" doc:name="Copy_of_Request" doc:id="5636dfbb-485c-46b2-a020-15efa2d44947" config-ref="HTTP_Request_configuration" path="/api/orders/{order_id}">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	order_id : vars.IDorder
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].OrderIDstore]" doc:name="Copy_of_IDstore" doc:id="558e53d4-8cb3-44ff-973c-c2b90aa3fc7d" variableName="IDstore" />
+        <http:request method="PUT" doc:name="Copy_of_Request" doc:id="9cc9f118-6d82-4e4a-a8ab-b35d5ec1859b" config-ref="HTTP_Request_configuration1" path="/api/process/update_price">
+            <http:body><![CDATA[#[{
+    "IDorder" : vars.IDorder ,
+    "IDstore" : vars.IDstore
+}]]]></http:body>
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+	IDorder : vars.IDorder
+}]]]></http:query-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Product Added"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="put:\process\order\newPrice:application\json:p-nd-openbanking-config">
+        <set-variable value="#[payload.IDorder as Number]" doc:name="IDorder" doc:id="2403dff8-49c4-483e-8e2f-923a0f84384c" variableName="IDorder" />
+        <set-variable value="#[payload.TotalPrice as Number]" doc:name="TotalPrice" doc:id="35c9644c-df48-4b7d-a9af-b9f2739b84a2" variableName="TotalPrice" />
+        <set-variable value="#[payload.TotalPriceWithPromo]" doc:name="TotalPriceWithPromo" doc:id="a92b4b37-611c-4e1f-a0ed-35255aaf4b27" variableName="TotalPriceWithPromo" />
+        <http:request method="GET" doc:name="Request all products" doc:id="05fd2067-e5d8-49af-9659-cd8b7cf27b74" path="/api/orderedProducts/all/{order_id}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	order_id : vars.IDorder
+}]]]></http:uri-params>
+        </http:request>
+        <foreach doc:name="For Each" doc:id="bcd4a39d-8737-4f7a-89af-872b66efce9e">
+            <set-variable value="#[payload.OrderedPrice]" doc:name="oldPrice" doc:id="4b370acb-f272-48bc-9e5c-ed43b479216f" variableName="oldPrice" />
+            <set-variable value="#[payload.PriceWithPromo]" doc:name="oldPromo" doc:id="399ed26a-173f-4b6e-9a2a-9d3c8b365264" variableName="oldPromo" />
+            <set-variable value="#[(vars.TotalPrice as Number) + (vars.oldPrice as Number)]" doc:name="TotalPrice" doc:id="271e83f9-7c2a-47c1-93e5-0c49a8b0fa29" variableName="TotalPrice" />
+            <set-variable value="#[(vars.TotalPriceWithPromo as Number) + (vars.oldPromo as Number)]" doc:name="TotalPriceWithPromo" doc:id="2118e265-815b-496a-b58d-c77afdf96f5d" variableName="TotalPriceWithPromo" />
+        </foreach>
+        <http:request method="PUT" doc:name="Request" doc:id="2907b709-4808-4a5d-b580-788ef1fcf696" path="/api/orders/{order_id}" config-ref="HTTP_Request_configuration">
+            <http:body><![CDATA[#[{
+	"newPrice" : vars.TotalPrice,
+	"newPriceWithPrice" : vars.TotalPriceWithPromo,
+	"IDorder" : vars.IDorder
+}]]]></http:body>
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	order_id : vars.IDorder
+}]]]></http:uri-params>
+        </http:request>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "message" : "Product",
+  "TotalPrice" : vars.TotalPrice,
+  "TotalPriceWithPromo" : vars.TotalPriceWithPromo
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\process\clients_info\(client_id)\connection:p-nd-openbanking-config">
+        <set-variable value="#[payload.email]" doc:name="Set Variable" doc:id="f261b12e-60ee-432a-8729-991807dfdf90" variableName="email" />
+        <set-variable value="#[payload.pwd]" doc:name="Set Variable" doc:id="89e9c248-8db5-4081-a75f-fc9bbe9a87e6" variableName="pwd" />
+        <http:request method="GET" doc:name="Request" doc:id="67609d81-6943-49f9-a1f0-193b01ab7d53" path="/api/clients/connection/{username}" config-ref="HTTP_Request_configuration">
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	username : vars.email
+}]]]></http:uri-params>
+        </http:request>
+        <set-variable value="#[payload[0].IDuser]" doc:name="Set Variable" doc:id="327ff966-a5d8-4648-a8ca-a0dcb390638c" variableName="userID" />
+        <set-variable value="#[payload[0].Pwd]" doc:name="Set Variable" doc:id="688ab71e-3e3b-4eb1-a0e3-8b06a70fa61d" variableName="testpwd" />
+        <choice doc:name="Choice" doc:id="4c883b67-4e09-4efb-8531-6410075bcf47">
+            <when expression="#[vars.pwd == vars.testpwd]">
+                <http:request method="GET" doc:name="Request" doc:id="23fa27b4-9cb9-4337-b7db-7acd3f3a9cfc" path="/api/clients/{user_id}" config-ref="HTTP_Request_configuration">
+                    <http:uri-params><![CDATA[#[output application/java
+---
+{
+	user_id : vars.userId
+}]]]></http:uri-params>
+                </http:request>
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "Connection" : "OK",
+  "User" : payload
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </when>
+            <otherwise>
+                <ee:transform doc:name="Transform Message" doc:id="c5207c99-2cd3-4f81-8ca0-cae54a26c4e0">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "Connection" : "REFUSED"
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="0e6546e7-666f-49f9-947c-9813093ce15c">
+                <set-payload value="Error while trying to connect" doc:name="Set Payload" doc:id="63f301e1-b8dd-4145-8b7c-36712c3e99de" />
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="post:\process\clients:application\json:p-nd-openbanking-config">
+        <set-variable value="#[payload]" doc:name="Set Variable" doc:id="bf2769e7-3d48-4be9-b4aa-f2d3674b89d7" variableName="new_client" />
+        <ee:transform doc:name="Transform Message" doc:id="244a7c41-56eb-4f52-b0c2-3242fe553c42">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+
+output application/json
+
+var strCharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ++
+
+'abcdefghijklmnop-qrstuvwxyz' ++
+
+'0123456789' ++
+
+'abcdefghijklmn-opqrstuvwxyz'
+
+var strCharSetLength = sizeOf(strCharSet) - 1
+
+var intLength = 16
+
+---
+
+1 to intLength map strCharSet[randomInt(strCharSetLength)] joinBy '']]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <set-variable value="#[payload]" doc:name="idempotencykey" doc:id="1e7a8196-7a72-4e6d-b8d1-a7e5f7fd9fbd" variableName="idempotencykey" />
+        <ee:transform doc:name="Transform Message" doc:id="e53cdcce-7304-4f9f-9805-6b3c8dba6e84">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "address": {
+      "address_line_1": vars.new_client.StreetAddress,
+      "country": vars.new_client.Country,
+      "first_name": vars.new_client.UserFirstName,
+      "last_name": vars.new_client.USerLastName,
+      "locality": vars.new_client.TownAddress,
+      "postal_code": vars.new_client.PostalCode
+    },
+    "birthday": vars.new_client.Birthday,
+    "email_address": vars.new_client.EmailAddress,
+    "family_name": vars.new_client.USerLastName,
+    "given_name": vars.new_client.UserFirstName,
+    "idempotency_key": vars.idempotencykey,
+    "nickname": vars.new_client.UserFirstName,
+    "phone_number": vars.new_client.PhoneNumber,
+  }]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <http:request method="PUT" doc:name="Request" doc:id="b595f37f-99a1-4fce-85a7-9cebb7664fb0" path="/api/square/users" config-ref="HTTP_Request_configuration_square" />
+        <set-variable value="#[payload.customer.id]" doc:name="IDuser" doc:id="bee8ac4a-492b-4b14-bf11-90629a1a4dbf" variableName="IDuser" />
+        <ee:transform doc:name="Transform Message" doc:id="5acd5cc9-2c6c-4866-971b-145ee6a7e788">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"IDuser" : vars.IDuser, 
+	"UserFirstName" : vars.new_client.UserFirstName, 
+	"UserLastName" : vars.new_client.USerLastName, 
+	"Birthday" : vars.new_client.Birthday , 
+	"IDbank" : vars.new_client.IDbank, 
+	"EmailAddress" : vars.new_client.EmailAddress, 
+	"StreetAddress" : vars.new_client.StreetAddress, 
+	"TownAddress" :  vars.new_client.TownAddress, 
+	"PostalCode" : vars.new_client.PostalCode, 
+	"Country" : vars.new_client.Country, 
+	"PhoneNumber" : vars.new_client.PhoneNumber,
+	"Lgn" : vars.new_client.Lgn, 
+	"Pwd" : vars.new_client.Pwd
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <http:request method="POST" doc:name="Request" doc:id="1583665a-6b22-42d0-8468-c47818009002" config-ref="HTTP_Request_configuration" path="/api/clients" />
+        <ee:transform xsi:schemaLocation=" http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message : "user created",
+  IDuser : vars.IDuser
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\process\order\validation:application\json:p-nd-openbanking-config">
+        <set-variable value="#[payload.IDorder]" doc:name="IDorder" doc:id="f7e3e246-97d5-43ae-ae29-f90c89cfa996" variableName="IDorder"/>
+		<set-variable value="#[payload.IDuser]" doc:name="IDuser" doc:id="c37eae1f-1f32-45dd-95f3-49ca9a9af929" variableName="IDuser"/>
+		<http:request method="GET" doc:name="Request" doc:id="d3b1c06a-ea89-4eb2-8406-b861d4192a0f" config-ref="HTTP_Request_configuration" path="/api/orders/{order_id}">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	order_id : vars.IDorder
+}]]]></http:uri-params>
+		</http:request>
+		<set-variable value="#[payload.OrderTotalPriceWithPromo]" doc:name="Price" doc:id="b900eb05-cd58-4b67-afda-3b6d73ce4c0f" variableName="Price"/>
+		<ee:transform doc:name="Transform Message" doc:id="3b6ea622-15c9-41bc-a939-ec742afea5d2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+output application/json
+
+var strCharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ++
+
+'abcdefghijklmnopqrstuvwxyz' ++
+
+'0123456789' ++
+
+'abcdefghijklmnopqrstuvwxyz'
+
+var strCharSetLength = sizeOf(strCharSet) - 1
+
+var intLength = 16
+
+---
+
+1 to intLength map strCharSet[randomInt(strCharSetLength)] joinBy '']]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="idemPotencyKey" doc:id="a6e3a173-c95f-4f02-affd-c2293dc76e3e" variableName="idemPotencyKey"/>
+		<ee:transform doc:name="Transform Message" doc:id="0fee249c-693f-43dd-b8c6-1bc2776227db" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"amount_money": {
+      "amount": vars.Price[0],
+      "currency": "USD"
+    },
+    "idempotency_key": vars.idemPotencyKey,
+    "source_id": "cnon:card-nonce-ok",
+    "customer_id": vars.IDuser
+    
+  }]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="create payment" doc:id="cddeb744-b585-4255-b048-90fcd9221054" config-ref="HTTP_Request_configuration_square" path="/api/square/payments"/>
+		<set-variable value="#[payload.payment.id]" doc:name="IDpayment" doc:id="65378f56-8d1f-48dc-a64b-6e2967585f18" variableName="IDpayment"/>
+		<http:request method="GET" doc:name="complete payment" doc:id="eacacb72-f70d-4756-a692-acbed00a0486" config-ref="HTTP_Request_configuration_square" path="/api/square/payment/{payment_id}">
+			<http:body ><![CDATA[#[{
+	"IDpayment" : vars.IDpayment
+}]]]></http:body>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	payment_id : vars.IDpayment
+}]]]></http:uri-params>
+		</http:request>
+		<http:request method="POST" doc:name="validate order database" doc:id="515f67ce-c685-4e09-849c-b37ff61a8576" config-ref="HTTP_Request_configuration" path="/api/orders/{order_id}/validation">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	order_id : vars.IDorder
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Message: "order validated and paid"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

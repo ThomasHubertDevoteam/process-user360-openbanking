@@ -1,0 +1,135 @@
+#%RAML 1.0
+title: s-nd-databaseAccess-openbanking
+
+protocols: [HTTP]
+
+uses:
+  request: /exchange_modules/81a47cd9-f628-4474-99b6-f13cb4152cbe/collection2/1.0.1/collection2.raml
+types:
+  store: !include /datatype/Store_dataType.raml
+  barcode: !include /datatype/Barcode_dataType.raml
+  fidelity: !include /datatype/Fidelity_dataType.raml
+  item: !include /datatype/Item_dataType.raml
+  order: !include /datatype/Order_dataType.raml
+  orderedProduct: !include /datatype/OrderedProduct_dataType.raml
+  product: !include /datatype/Product_dataType.raml
+  promo: !include /datatype/Promo_dataType.raml
+  user: !include /datatype/User_dataType.raml
+
+securitySchemes:
+  securityBasicScheme: !include /exchange_modules/81a47cd9-f628-4474-99b6-f13cb4152cbe/securityfragment/1.0.0/securityfragment.raml
+
+securedBy:
+  - securityBasicScheme
+
+/process:
+  /test:
+    type:
+      request.read-only:
+        exampleRead: {"message":"API OK"}
+
+  /order:
+    /validation:
+      type:
+        request.post-only:
+          exampleBodyPost: {"IDorder" : "QZDFQSE123SFDZ"} 
+          exampleReadPost: {"Message" : "order validated and paid"}
+
+    /newPrice:
+      type:
+        request.put-only:
+          exampleBodyPut: {"IDorder" : 4}
+          exampleReadPut: {'message' : "Order Updated"}
+
+  /store_qr_code/{store_qrcode}:
+    type:
+      request.read-only:
+        exampleRead: {"store_id":"123", "Store Name" : "Carrefour"}
+
+  /barcodes_product/{full_code}:
+    type:
+      request.read-only:
+        exampleRead: {"IDproduct":"1"}
+
+  /products_info/{product_id}:
+    type:
+      request.read-only:
+        exampleRead: !include /examples/Product_example.raml
+    /price:
+      type:
+        request.read-only:
+          exampleRead: {"Price":3.99}
+    /info:
+      type:
+        request.read-only:
+          exampleRead: {"Info":"blablabla"}
+    /promo:
+      type:
+        request.read-only-with-query:
+          queryName: IDstore
+          exampleRead: !include /examples/Promo_example.raml
+  /update_price:
+    type:
+      request.put-only:
+        exampleBodyPut: {"ID_client" : 1}
+        exampleReadPut: {"Message" : "Price updated", "New Total Price" : 100}
+
+  /products_order:
+    /to_order:
+      type:
+        request.post-only-with-query:
+          queryName: IDproduct
+          exampleBodyPost: !include /examples/Product_example.raml
+          exampleReadPost: {"IDproduct":1}
+    /update:
+      type:
+        request.post-only-with-query:
+          queryName: NumProduct
+          exampleBodyPost: {}
+          exampleReadPost: {"message":"Product updated"}
+
+    /plus:
+      type:
+        request.post-only-with-query:
+          queryName: NumberToAdd
+          exampleBodyPost: {}
+          exampleReadPost: {'message' : 'Product Added'}
+    /minus:
+      type:
+        request.post-only-with-query:
+          queryName: NumberToRemove
+          exampleBodyPost: {}
+          exampleReadPost: {'message' : 'Product Removed'}
+    
+
+  /promos/{product_id}:
+    type:
+      request.read-only-with-query:
+        queryName: IDstore
+        exampleRead: !include /examples/Promo_example.raml
+
+  /clients:
+    type:
+      request.post-only:
+        exampleBodyPost: !include /examples/User_example.raml
+        exampleReadPost: !include /examples/User_example.raml
+
+  /clients_info/{client_id}:
+    type:
+      request.read-only:
+        exampleRead: !include /examples/User_example.raml
+    /bank:
+      type:
+        request.read-only:
+          exampleRead: {"IDbank":"123"}
+
+    /fidelity:
+      type:
+        request.read-only:
+          exampleRead: !include /examples/Fidelity_example.raml
+    /connection:
+      type:
+        request.read-only:
+          exampleRead: !include /examples/User_example.raml
+
+
